@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M(an)-BTI : 남성 그루밍 성향 진단</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --bg: #f4f6f7;
+            --white: #ffffff;
+            --text: #333333;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+            letter-spacing: -1px;
+        }
+
+        .desc {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .category-section {
+            margin-bottom: 40px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+        }
+
+        .category-title {
+            font-size: 1.3rem;
+            color: var(--accent);
+            margin-bottom: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+
+        .question-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .question-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .question-item input[type="checkbox"] {
+            margin-top: 5px;
+            margin-right: 12px;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+        .question-text {
+            font-size: 0.95rem;
+            word-break: keep-all;
+        }
+
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            background-color: var(--primary);
+            color: var(--white);
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn-submit:hover {
+            background-color: #1a252f;
+        }
+
+        /* 결과 화면 스타일 */
+        #result-page {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.5s;
+        }
+
+        .result-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--accent);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .rank-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .type-title {
+            font-size: 1.4rem;
+            color: #555;
+            margin-bottom: 30px;
+        }
+
+        .score-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .detail-desc {
+            text-align: left;
+            background: #eef2f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .detail-desc h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="quiz-page">
+    <header>
+        <h1>M(an)-BTI 테스트</h1>
+        <p class="desc">대한민국 2040 남성 자기관리 성향 진단<br>(총 60문항 / 해당되는 것에 체크)</p>
+    </header>
+
+    <form id="quiz-form">
+        </form>
+
+    <button type="button" class="btn-submit" onclick="calculateResult()">결과 확인하기</button>
+</div>
+
+<div class="container" id="result-page">
+    <header>
+        <h1>진단 결과</h1>
+    </header>
+    
+    <div class="result-content">
+        <span class="result-badge" id="result-score">총점 00점</span>
+        <div class="rank-title" id="result-rank">RANK NAME</div>
+        <div class="type-title" id="result-type">TYPE NAME</div>
+        
+        <div class="score-box">
+            <p id="result-summary">결과 요약 텍스트가 들어갑니다.</p>
+        </div>
+
+        <div class="detail-desc">
+            <h3>📋 당신의 유형 분석</h3>
+            <p id="type-desc">유형 설명이 들어갑니다.</p>
+        </div>
+
+        <div class="detail-desc">
+            <h3>💡 솔루션</h3>
+            <p id="type-solution">추천 솔루션이 들어갑니다.</p>
+        </div>
+
+        <button class="btn-submit" onclick="location.reload()">다시 테스트하기</button>
+    </div>
+</div>
+
+<script>
+    // 질문 데이터 (6개 카테고리, 각 10문항)
+    const quizData = {
+        hair: {
+            title: "1. 헤어 (Hair)",
+            questions: [
+                "미용실(바버샵) 방문 주기가 4주를 넘기지 않는다.",
+                "샴푸 후 린스나 트리트먼트를 반드시 사용한다.",
+                "드라이할 때 단순히 말리는 것이 아니라, 뿌리 볼륨이나 가르마 모양을 잡는다.",
+                "옆머리가 뜨는 것을 방지하기 위해 '다운펌'을 주기적으로 하거나 확실히 누른다.",
+                "왁스, 포마드, 컬크림, 스프레이 등 스타일링 제품을 주 3회 이상 사용한다.",
+                "내 얼굴형(장두/단두/각진형 등)에 맞는 헤어스타일이 무엇인지 설명할 수 있다.",
+                "탈모 샴푸를 쓰거나 두피 토닉, 혹은 약 복용 등 탈모 관리를 하고 있다.",
+                "'아이비리그', '가일', '시스루', '리프' 등 구체적인 스타일 명칭을 알고 시도해 봤다.",
+                "고데기(매직기)나 롤빗을 사용할 줄 안다.",
+                "머리 손질이 마음에 들지 않으면 외출할 때 하루 종일 신경 쓰인다."
+            ]
+        },
+        skin: {
+            title: "2. 피부 (Skin)",
+            questions: [
+                "세안 시 비누가 아닌 폼클렌징(혹은 오일)을 반드시 사용한다.",
+                "스킨/로션 외에 에센스, 세럼, 앰플 중 하나 이상을 추가로 바른다.",
+                "외출 시 계절에 상관없이 선크림을 무조건 바른다.",
+                "입술에 각질이 없도록 립밤을 수시로 바른다.",
+                "내 피부 타입(건성/지성/수부지)을 정확히 알고 제품을 골라 쓴다.",
+                "중요한 날에는 BB크림, 파운데이션, 톤업크림 등으로 피부 톤을 보정한다.",
+                "최근 3개월 내에 마스크팩이나 각질 제거(스크럽)를 한 적이 있다.",
+                "피부 트러블(여드름)이 났을 때 짜지 않고 패치를 붙이거나 약을 바른다.",
+                "피부과 시술(레이저, 점 빼기, 리쥬란 등) 경험이 있거나 주기적으로 다닌다.",
+                "주변 사람들에게 '피부 좋다'는 말을 들어본 적이 있다."
+            ]
+        },
+        body: {
+            title: "3. 운동/몸매 (Body)",
+            questions: [
+                "현재 나의 몸무게와 골격근량, 체지방률 대략적인 수치를 알고 있다.",
+                "주 3회 이상, 1시간 이상 땀 흘리는 운동을 한다.",
+                "단백질 보충제를 먹거나 식사 시 단백질 함량을 계산해서 먹는다.",
+                "단순히 '마른 몸'이나 '돼지'가 아닌, 근육이 잡힌 탄탄한 몸을 유지하고 있다.",
+                "어깨가 넓어 보이거나 다리가 길어 보이기 위한 체형 보완 운동을 한다.",
+                "뱃살이 벨트 위로 튀어나오지 않는다.",
+                "운동 효과를 높이기 위한 장비(스트랩, 벨트, 러닝화 등)나 기능성 의류가 있다.",
+                "바디프로필 촬영 경험이 있거나, 찍을 계획(구체적)이 있다.",
+                "태닝을 하거나 반대로 피부 미백을 위해 신경 쓴다.",
+                "옷을 입었을 때 가슴이나 등 근육 때문에 핏이 산다는 느낌을 받는다."
+            ]
+        },
+        fashion: {
+            title: "4. 패션 (Fashion)",
+            questions: [
+                "내가 입는 옷은 100% 내가 직접 고르고 구매한다.",
+                "내 신체 사이즈(어깨, 가슴, 허리, 허벅지, 기장)를 cm 단위로 대략 알고 있다.",
+                "외출 전 전신 거울을 보고 핏이나 구김 상태를 반드시 점검한다.",
+                "무신사, 29CM 등 패션 플랫폼을 주 1회 이상 접속하여 둘러본다.",
+                "상하의 색 조합(톤온톤 등)이나 소재 매치를 고려하여 코디한다.",
+                "바지 기장이 애매하면 수선하거나 롤업하여 핏을 맞춘다.",
+                "시계 외에 반지, 팔찌, 목걸이, 안경 등 액세서리를 활용한다.",
+                "계절별로 입을 수 있는 아우터(코트, 패딩, 자켓 등)가 종류별로 있다.",
+                "유행하는 브랜드나 핏(와이드, 크롭 등)을 알고 시도해 본다.",
+                "'옷 잘 입는다'는 소리를 듣거나, 주변에서 옷 정보를 물어본 적이 있다."
+            ]
+        },
+        scent: {
+            title: "5. 향 (Scent)",
+            questions: [
+                "외출 전 샤워를 하지 않으면 절대 나가지 않는다.",
+                "데오드란트나 구강청결제 등을 사용해 악취를 사전 차단한다.",
+                "외출 시 반드시 향수를 뿌린다.",
+                "내가 사용하는 향수의 브랜드와 제품명을 정확히 알고 있다.",
+                "상황(출근/데이트)이나 계절(여름/겨울)에 따라 뿌리는 향수가 다르다.",
+                "올리브영 흔한 향수 외에 '니치 향수(고가 라인)'를 하나 이상 보유하고 있다.",
+                "섬유유연제나 섬유향수 향을 신경 써서 고른다.",
+                "집이나 차량에 디퓨저, 캔들 등을 비치하여 공간 향을 관리한다.",
+                "향수를 뿌릴 때 지속력을 높이는 나만의 방법(위치, 레이어링 등)이 있다.",
+                "타인에게서 '좋은 냄새 난다'는 피드백을 받아본 적이 있다."
+            ]
+        },
+        detail: {
+            title: "6. 디테일 (Detail)",
+            questions: [
+                "1주일에 한 번 이상 콧털을 정리하여 절대 삐져나오지 않게 한다.",
+                "손톱과 발톱을 하얗게 일어나거나 때가 끼지 않게 항상 짧게 유지한다.",
+                "눈썹 칼/가위/족집게를 사용해 눈썹 잔털을 정리한다.",
+                "여름철 얇은 옷을 입을 때 니플패치(유두 가리개)를 반드시 사용한다.",
+                "면도 후 수염 자국이 푸르딩딩하게 남는 것을 극도로 싫어한다(혹은 제모함).",
+                "다리털, 겨드랑이털 등이 너무 수북하지 않게 숱을 치거나 왁싱을 한다.",
+                "발 뒤꿈치에 하얀 각질이 없도록 관리한다.",
+                "귀 안쪽이나 귀 뒤쪽을 씻을 때 꼼꼼히 닦아 냄새가 안 나게 한다.",
+                "눈썹 문신(반영구)을 했거나 할 의향이 있다.",
+                "손이 거칠지 않게 핸드크림을 챙겨 바른다."
+            ]
+        }
+    };
+
+    // 질문 렌더링
+    const formContainer = document.getElementById('quiz-form');
+    let questionIndex = 0;
+
+    for (const [key, data] of Object.entries(quizData)) {
+        const section = document.createElement('div');
+        section.className = 'category-section';
+        
+        section.innerHTML = `<div class="category-title">${data.title}</div>`;
+        
+        data.questions.forEach((q) => {
+            questionIndex++;
+            const qItem = document.createElement('label');
+            qItem.className = 'question-item';
+            qItem.innerHTML = `
+                <input type="checkbox" name="${key}" value="1">
+                <span class="question-text">${q}</span>
+            `;
+            section.appendChild(qItem);
+        });
+
+        formContainer.appendChild(section);
+    }
+
+    // 결과 계산 로직
+    function calculateResult() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+        let totalScore = checkboxes.length;
+        
+        // 카테고리별 점수 계산
+        let scores = { hair: 0, skin: 0, body: 0, fashion: 0, scent: 0, detail: 0 };
+        checkboxes.forEach(chk => {
+            scores[chk.name]++;
+        });
+
+        // 등급 판정 (Rank)
+        let rank = "";
+        let rankSummary = "";
+        if (totalScore <= 15) {
+            rank = "STONE (원석)";
+            rankSummary = "꾸밈에 대한 개념이 아직 없는 상태입니다. 씻는 것부터 시작해볼까요?";
+        } else if (totalScore <= 30) {
+            rank = "BRONZE (일반인)";
+            rankSummary = "사회생활에 지장 없는 평범한 대한민국 남성 표준입니다.";
+        } else if (totalScore <= 45) {
+            rank = "SILVER (훈남)";
+            rankSummary = "어딜 가나 깔끔하고 호감형이라는 소리를 듣는 관리남입니다.";
+        } else if (totalScore <= 55) {
+            rank = "GOLD (트렌드세터)";
+            rankSummary = "외모 경쟁력이 상위 10%! 꾸밈이 취미이자 특기인 수준입니다.";
+        } else {
+            rank = "DIAMOND (그루밍 갓)";
+            rankSummary = "걸어 다니는 화보. 밥 먹고 관리만 하는 전문가 경지입니다.";
+        }
+
+        // 유형 판정 (Type - 가장 높은 점수)
+        let maxScore = -1;
+        let maxType = "";
+        const typeMap = {
+            hair: { name: "H형 (헤어 아티스트)", desc: "머리빨의 중요성을 아는 당신! 헤어 스타일링에 진심이군요.", sol: "머리는 완벽하니 이제 피부(Skin) 관리에 투자해보세요." },
+            skin: { name: "S형 (물광 피부)", desc: "피부결이 고운 동안의 소유자! 선크림은 필수죠.", sol: "운동(Body)을 병행하면 소년미와 남성미를 다 가질 수 있습니다." },
+            body: { name: "B형 (머슬 피트)", desc: "헬스장이 제2의 집인 당신. 옷 핏이 남다릅니다.", sol: "근육질 몸에 거친 피부보다는 깔끔한 피부가 섹시합니다. 제모/피부에 투자하세요." },
+            fashion: { name: "F형 (패션 피플)", desc: "브랜드 박사! 센스 있는 코디로 주목받는 스타일.", sol: "옷걸이(몸, 자세)가 좋아야 옷이 더 삽니다. 운동을 병행하세요." },
+            scent: { name: "P형 (향기 마스터)", desc: "좋은 향기로 기억되는 사람. 감각적이고 섬세하시네요.", sol: "향기는 좋은데 디테일(콧털, 손톱)이 무너지면 깹니다. 청결을 다시 체크!" },
+            detail: { name: "D형 (청결 귀공자)", desc: "엄청난 깔끔함의 소유자. 털 관리와 청결이 완벽합니다.", sol: "기본기가 탄탄하니 이제 과감한 스타일(헤어, 패션) 변신을 시도해 보세요." }
+        };
+
+        for (const [key, val] of Object.entries(scores)) {
+            if (val > maxScore) {
+                maxScore = val;
+                maxType = key;
+            }
+        }
+        
+        // 화면 전환 및 결과 표시
+        document.getElementById('quiz-page').style.display = 'none';
+        document.getElementById('result-page').style.display = 'block';
+        window.scrollTo(0, 0);
+
+        document.getElementById('result-score').textContent = `총점 ${totalScore}점 / 60점`;
+        document.getElementById('result-rank').textContent = rank;
+        document.getElementById('result-summary').textContent = rankSummary;
+        
+        document.getElementById('result-type').textContent = typeMap[maxType].name;
+        document.getElementById('type-desc').textContent = typeMap[maxType].desc;
+        document.getElementById('type-solution').textContent = typeMap[maxType].sol;
+    }
+</script>
+
+</body>
+</html>
